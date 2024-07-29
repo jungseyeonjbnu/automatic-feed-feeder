@@ -1,0 +1,66 @@
+#include <SoftwareSerial.h> 
+#include "Servo.h"
+
+const int blueTx=2;   //Tx (블루투스 신호 보내는 핀 설정)
+const int blueRx=3;   //Rx (블루투스 신호 받는 핀 설정)
+SoftwareSerial mySerial(blueTx, blueRx); //시리얼 통신을 위한 객체선언
+Servo myservo; //서보 모터 생성
+const int zpin=4;   // 조이스틱 z핀
+String myString=""; //블루투스로 받는 문자열
+unsigned long ret_time; //시간 측정 
+ 
+void setup() {
+  myservo.attach(12);   //서보모터 시그널 핀설정
+  mySerial.begin(9600); //블루투스 시리얼 
+  myservo.write(0);     //서보모터 초기각도 0도 설정
+  pinMode(zpin,INPUT_PULLUP); //조이스틱을 입력으로 받음
+ 
+}
+
+void joy(){
+  int zvalue = digitalRead(zpin);
+  if(zvalue==LOW)//조이스틱에 입력이 감지 되면
+  { myservo.write(140);     //서보모터 각도 140도로 움직임
+    delay(2000); //2초 후
+    myservo.write(0);   //서보모터 각도 0도로 움직임
+      }
+}
+
+void blue(){
+  while(mySerial.available())  //mySerial 값이 있으면
+  {
+    char myChar = (char)mySerial.read();  //mySerial int형식의 값을 char형식으로 변환
+    myString+=myChar;   //수신되는 문자열을 myString에 모두 붙임 (1바이트씩 전송되는 것을 모두 붙임)
+    delay(5);           //수신 문자열 끊김 방지
+  }
+  
+  if(!myString.equals(""))  //만약 myString 값이 있다면
+  {
+    Serial.println("input value: "+myString); //시리얼모니터에 myString값 출력
+ 
+      if(myString=="on")  //'on' 이면
+      {
+        myservo.write(140);     //서보모터 각도 140도로 움직임
+      } else { //'off' 면
+        myservo.write(0);   //서보모터 각도 0도로 움직임
+      }
+    myString="";  //myString 변수값 초기화
+  }
+  
+}
+
+void timeing(){
+  ret_time=millis(); //서보모터 각도 140도로 움직임
+  if ((ret_time/1000) % (60*60*12) == 0) //12시간에 한 번
+  { myservo.write(140);
+    delay(2000); //2초 후
+    myservo.write(0);   //서보모터 각도 0도로 움직임
+}
+}
+
+void loop() {
+  joy();  
+  blue();
+  timeing();
+  
+}
